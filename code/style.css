@@ -1,0 +1,65 @@
+@charset "utf-8";
+/* CSS Document */
+
+body{
+
+padding-left:50%;
+}
+	
+#main{
+	max-width:900px;
+	min-width:800px;
+	margin-left: -450px;
+	font: normal 16px Trebuchet MS;
+	opacity:1;
+}
+#header{
+ /* background:#3e4982; */
+ margin-bottom: 20px;
+ height:40px;
+ text-align:left;
+
+ padding-top:40px;
+}
+#menu{
+ background:#6173cb;
+ float:left;
+ width:200px;
+ text-align:center;
+ color:#FFFFFF;
+ font-size:18px;
+ padding-top:10px;
+}
+#content{
+ background:#ffffff;
+ width:100%;
+ /*  
+ margin-left:200px;
+ */
+}
+
+#share{
+width:100%;
+}
+
+.rightAlign
+{
+ text-align:right;
+}
+
+.table
+{
+ padding: 5px;
+ width:100%;
+}
+
+.header
+{
+ font-size:24px;
+}
+
+.newpost
+{
+ text-align:right;
+font-size:18px;
+}

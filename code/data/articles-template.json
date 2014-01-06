@@ -1,0 +1,27 @@
+[
+  '{{repeat(1000)}}',
+  {
+    article: {
+      type: 'article',
+      _id: '{{guid}}',
+      author: '{{firstName}}',
+      title: '{{lorem(6)}}',
+      content: '{{lorem(10,paragraphs)}}',
+      created: '{{date(YYYY-MM-ddThh:mm:ss Z)}}',
+      tags: [
+        '{{repeat(2)}}',
+        '{{lorem(1)}}'
+      ]
+    },
+    comments: [
+      '{{repeat(5, 7)}}',
+      {
+        _id: '{{guid}}',
+        type: 'comment',
+        author: '{{firstName}}',
+        content: '{{lorem(1,paragraphs)}}',
+        created: '{{date(YYYY-MM-ddThh:mm:ss Z)}}'
+      }
+    ]
+  }
+]

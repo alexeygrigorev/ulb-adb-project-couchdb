@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<head>
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<meta charset="utf-8" />
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+	<title>New post</title>
+	<script>
+$.fn.serializeObject = function()
+{
+    var o = {};
+    var a = this.serializeArray();
+    $.each(a, function() {
+        if (o[this.name] !== undefined) {
+            if (!o[this.name].push) {
+                o[this.name] = [o[this.name]];
+            }
+            o[this.name].push(this.value || '');
+        } else {
+            o[this.name] = this.value || '';
+        }
+    });
+    return o;
+};
+
+</script>
+</head>
+<body>
+<script>
+function SendPost()
+{
+var urlid = '/_uuids';
+$.ajax({
+        url: urlid,
+		//type: 'PUT'
+        dataType: 'json',
+        success: function (data) {
+			var uuid = data.uuids[0];
+			
+	var url = '/blog/' + uuid;
+	
+	var article = $("#usrform").serializeObject();
+	article.type = 'article';
+	article.created = new Date();
+	article.tags = article.tags.split(',');
+    $.ajax({
+        url: url,
+		type: 'PUT',
+		data: JSON.stringify(article),
+        dataType: 'json',
+        success: function (data) {
+            alert("Post was added");
+			window.location.replace("index.html");
+        }
+    });
+			
+        }
+    });
+
+}
+</script>
+
+
+     <div id="main">
+       <div id="header">
+			<div class="header">New post </div>
+       </div>
+	   <hr>
+	   <!--
+       <div id="menu">Articles list?</div>
+	   -->
+       <div id="content">
+       <div id="output">
+              	<form id="usrform">
+  					Title:<input type="text" name="title"><br>
+  					Author: <input type="text" name="author"><br>
+  					<textarea rows="20" cols="100" name="content">Enter text here...</textarea><br>
+					<textarea rows="2" cols="100" name="tags">Enter text here...</textarea><br>
+				</form>
+				<button type="button" onclick="SendPost()">Send post</button> 
+       </div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="utf-8" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+
+    <title>CouchDB Blog</title>
+</head>
+
+<body class="bodyclass">
+
+
+<script>
+var page = 0;
+var currentID;
+var currentRev;
+
+$.fn.serializeObject = function()
+{
+    var o = {};
+    var a = this.serializeArray();
+    $.each(a, function() {
+        if (o[this.name] !== undefined) {
+            if (!o[this.name].push) {
+                o[this.name] = [o[this.name]];
+            }
+            o[this.name].push(this.value || '');
+        } else {
+            o[this.name] = this.value || '';
+        }
+    });
+    return o;
+};
+
+function createTable(document, article, overview) {
+    var output = document.createElement('div');
+    var table = document.createElement('table');
+    table.setAttribute('border', '0');
+    table.setAttribute('class', "table");
+    table.setAttribute('cellpadding', 0);
+    table.setAttribute('cellspacing', 0);
+
+    var tbdy = document.createElement('tbody');
+    var tr = document.createElement("TR");
+    createTD(article.title, tr);
+    table.appendChild(tr);
+    tr = document.createElement("TR");
+    createTD("Date: " + article.created, tr, "class", "rightAlign");
+    table.appendChild(tr);
+    tr = document.createElement("TR");
+    createTD("Author: " + article.author, tr, "class", "rightAlign");
+    table.appendChild(tr);
+    tr = document.createElement("TR");
+    createTD(article.content, tr);
+    table.appendChild(tr);
+    table.appendChild(tbdy);
+
+    output.appendChild(table);
+
+    if (overview) {
+		$('#oldnew').empty();
+        var a = document.createElement('a');
+        linkText = document.createTextNode("Read more");
+        a.appendChild(linkText);
+        a.href = "javascript:void(0);";
+        a.onclick = function() {
+            // todo: need to scroll up
+            showArticle(article._id);
+			currentID = article._id;
+			currentRev = article._rev;
+        }
+        document.getElementById("content").appendChild(a);
+
+        //var nextPage=document.getElementById("old_new");
+		 //nextPage.innerHTML="";
+		
+		var nextPage = document.createElement('a');
+        var nextPageText = document.createTextNode("Older posts ");
+        nextPage.appendChild(nextPageText);
+        nextPage.href = "javascript:void(0);";
+        nextPage.onclick = function() {
+            page = page + 1;
+            loadIndexPage(page);
+        }
+
+        document.getElementById("oldnew").appendChild(nextPage);
+        
+        var prevPage = document.createElement('a');
+        var prevPageText = document.createTextNode(" Newer posts");
+        prevPage.appendChild(prevPageText);
+        prevPage.href = "javascript:void(0);";
+        prevPage.onclick = function() {
+            page = page - 1;
+            loadIndexPage(page);
+        }
+        if (page > 0) {
+            document.getElementById("oldnew").appendChild(prevPage);
+        }
+		
+		
+		
+    } else {
+	
+			var edit = document.createElement('a');
+        linkText = document.createTextNode("Edit");
+        edit.appendChild(linkText);
+        edit.href = "javascript:void(0);";
+        edit.onclick = function() {
+            $('#share').empty();
+			$('#content').empty();
+			
+		$('#edit').append('<span>EDIT YOUR ARTICLE: </span><br><br>');	
+		$("#edit").append('<form id="editform">');	
+		$("#edit form").append('Title: <input type="text" name="title" value="'+article.title+'"><br><br>');
+		$("#edit form").append('Author: <input type="text" name="author" value="'+article.author+'"><br><br>');
+		$("#edit form").append('<textarea rows="10" cols="100" name="content">'+article.content+'</textarea><br><br>');
+		$("#edit form").append('Tags: <textarea rows="1" cols="60" name="tags">'+article.tags+'</textarea>');
+		$("#edit").append('<br>');
+		$("#edit").append('<button type="button" onclick="Edit()">Save changes</button>');
+			
+        }
+        output.appendChild(edit);		
+	
+			var hr = document.createElement('hr');
+			output.appendChild(hr);
+	
+        var title = document.createElement('div');
+        title.appendChild(document.createTextNode('COMMENTS:'));
+        output.appendChild(title);
+
+        for (var cmIdx in article.comments) {
+            var comment = article.comments[cmIdx];
+            var commentDiv = document.createElement('div');
+			
+			var br2 = document.createElement('br');
+			commentDiv.appendChild(br2);
+			
+			var commentAuthor = document.createTextNode(comment.author);
+			commentDiv.appendChild(commentAuthor);
+			
+			
+			var br = document.createElement('br');
+			commentDiv.appendChild(br);
+			
+            var commentText = document.createTextNode(comment.content);
+            commentDiv.appendChild(commentText);
+			
+			
+		
+            output.appendChild(commentDiv);
+			//$("#output").append('<hr>');
+        }
+
+        var hr = document.createElement('hr');
+			output.appendChild(hr);
+		
+		$('#oldnew').empty();
+	$('#share').append('<br><br><span>LEAVE YOUR COMMENT: </span><br><br>');	
+	$("#share").append('<form id="commentform">');	
+	$("#share form").append('Author: <input type="text" name="author"><br><br>');
+    $("#share form").append('<textarea rows="5" cols="60" name="content">Enter your comment</textarea>');
+	$("#share").append('<br>');
+    $("#share").append('<button type="button" onclick="SendComment()">Upload comment</button>');
+	
+	var back = document.createElement('a');
+        linkText = document.createTextNode("Back");
+        back.appendChild(linkText);
+        back.href = "javascript:void(0);";
+        back.onclick = function() {
+            $('#share').empty();
+			loadIndexPage(page);
+        }
+        output.appendChild(back);
+		
+		var space = document.createTextNode("   ");
+		output.appendChild(space);
+		
+
+	
+	}
+
+    var content = document.getElementById('content');
+    content.appendChild(output);
+}
+
+function createTD(text, tr, attribute, value) {
+    var td = document.createElement("TD");
+    td.appendChild(document.createTextNode(text));
+    td.setAttribute(attribute, value);
+    tr.appendChild(td);
+}
+
+$(document).ready(function() {
+    loadIndexPage(page);
+});
+
+var loadIndexPage = function(pageNo) {
+    var limit = 10;
+    var url = '/blog/_design/queries/_view/articles?limit=' + limit + '&skip=' + (page * limit);
+    $.ajax({
+        url: url,
+		//type: 'PUT'
+        dataType: 'json',
+        success: function (data) {
+            console.log(data);
+            $('#content').empty();
+            var rows = data.rows;
+            for (var idx in rows) {
+                var row = rows[idx];
+                createTable(document, row.value, true);
+            }
+        }
+    });
+}
+
+var showArticle = function(id) {
+    var start = escape('["' + id + '","a"]');
+    var end = escape('["' + id + '","b"]');
+    var url = '/blog/_design/queries/_view/fullArticle?startkey=' + start + '&endkey=' + end;
+
+    $.ajax({
+        url: url,
+        dataType: 'json',
+        success: function (data) {
+            console.log(data);
+            $('#content').empty();
+
+            var rows = data.rows;
+            var article = rows[0].value;
+            var commentsDoc = rows.slice(1);
+            var comments = [];
+            for (var idx in commentsDoc) {
+                var com = commentsDoc[idx];
+                comments.push(com.value);
+            }
+
+            article.comments = comments;
+
+            createTable(document, article, false);
+			
+	
+			
+        }
+    });
+	
+}	
+
+function SendComment()
+{
+//alert(currentID);
+var urlid = '/_uuids';
+$.ajax({
+        url: urlid,
+        dataType: 'json',
+        success: function (data) {
+			var uuid = data.uuids[0];
+			
+	var url = '/blog/' + uuid;
+	
+	var article = $("#commentform").serializeObject();
+	article.type = 'comment';
+	article.article_id = currentID;
+	article.created = new Date();
+    $.ajax({
+        url: url,
+		type: 'PUT',
+		data: JSON.stringify(article),
+        dataType: 'json',
+        success: function (data) {
+            alert("Comment was added");
+			location.reload();
+        }
+    });
+			
+        }
+    });
+}
+
+function Edit()
+{
+
+//var $db = $.couch.db("blog");
+var url = '/blog/' + currentID + "?rev=" + currentRev;
+
+$.ajax({
+	url: url,
+	type: 'DELETE',
+	success: function (data) {
+	
+	
+		var urlid = '/_uuids';
+$.ajax({
+        url: urlid,
+        dataType: 'json',
+        success: function (data) {
+			var uuid = data.uuids[0];
+			
+	var url2 = '/blog/' + currentID;
+	
+	var article = $("#editform").serializeObject();
+	article.type = 'article';
+	article.article_id = currentID;
+	article.created = new Date();
+	article.tags = article.tags.split(',');
+    $.ajax({
+        url: url2,
+		type: 'PUT',
+		data: JSON.stringify(article),
+        dataType: 'json',
+        success: function (data) {
+            alert("Article was updated");
+			location.reload();
+        }
+    });
+			
+        }
+    });
+	
+	
+	
+	
+	
+	}
+});
+}
+
+</script>
+
+    <div id="main">
+        <div id="header">
+            <div class="header">Blog </div>
+            <div class="newpost"><a href="NewPost.html">New post</a></div>
+        </div>
+
+        <hr>
+
+        <div id="content">
+            <div id="output"></div>
+			<div id="comments"></div>
+        </div>
+		<div id="share"></div>	
+		<div id="edit"></div>
+    </div>
+	
+
+<div id="oldnew"></div>
+</body>
+</html>
